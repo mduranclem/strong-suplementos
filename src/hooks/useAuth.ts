@@ -6,29 +6,41 @@ export function useAuthInit() {
   const { setUser, setLoading } = useAuthStore()
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (data.session?.user) {
+    supabase.auth.getSession().then(async ({ data, error }) => {
+      if (error || !data.session?.user) {
+        setUser(null)
+        setLoading(false)
+        return
+      }
+      try {
         const { data: profile } = await supabase
           .from('users')
           .select('id, name, role')
           .eq('id', data.session.user.id)
           .single()
         setUser(profile ?? null)
-      } else {
+      } catch {
         setUser(null)
       }
+      setLoading(false)
+    }).catch(() => {
+      setUser(null)
       setLoading(false)
     })
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
+      if (!session?.user) {
+        setUser(null)
+        return
+      }
+      try {
         const { data: profile } = await supabase
           .from('users')
           .select('id, name, role')
           .eq('id', session.user.id)
           .single()
         setUser(profile ?? null)
-      } else {
+      } catch {
         setUser(null)
       }
     })
