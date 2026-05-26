@@ -13,9 +13,6 @@ export function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      // Limpiar sesión vieja localmente antes de hacer login nuevo
-      await supabase.auth.signOut({ scope: 'local' })
-
       const timeout = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('timeout')), 12000)
       )

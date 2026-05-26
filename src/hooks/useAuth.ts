@@ -6,37 +6,22 @@ export function useAuthInit() {
   const { setUser, setLoading } = useAuthStore()
 
   useEffect(() => {
-    // Si en 6 segundos no respondió Supabase, mostrar login igual
     const fallback = setTimeout(() => setLoading(false), 6000)
 
-    supabase.auth.getSession().then(async ({ data }) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       clearTimeout(fallback)
-      if (!data.session?.user) {
+      if (!session?.user) {
         setUser(null)
         setLoading(false)
         return
       }
       const { data: profile } = await supabase
-        .from('users')
-        .select('id, name, role')
-        .eq('id', data.session.user.id)
-        .single()
-      setUser(profile ?? null)
-      setLoading(false)
-    }).catch(() => {
-      clearTimeout(fallback)
-      setUser(null)
-      setLoading(false)
-    })
-
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!session?.user) { setUser(null); return }
-      const { data: profile } = await supabase
         .from('users').select('id, name, role').eq('id', session.user.id).single()
       setUser(profile ?? null)
+      setLoading(false)
     })
 
-    return () => { clearTimeout(fallback); listener.subscription.unsubscribe() }
+    return () => { clearTimeout(fallback); subscription.unsubscribe() }
   }, [setUser, setLoading])
 }
 
