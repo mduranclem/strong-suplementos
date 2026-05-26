@@ -12,9 +12,27 @@ export function LoginPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const { error: err } = await supabase.auth.signInWithPassword({ email, password })
-    if (err) setError('Usuario o contraseña incorrectos')
-    setLoading(false)
+    try {
+      // Limpiar sesión vieja localmente antes de hacer login nuevo
+      await supabase.auth.signOut({ scope: 'local' })
+
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 12000)
+      )
+      const { error: err } = await Promise.race([
+        supabase.auth.signInWithPassword({ email, password }),
+        timeout,
+      ])
+      if (err) setError('Usuario o contraseña incorrectos')
+    } catch (e: any) {
+      if (e.message === 'timeout') {
+        setError('El servidor no responde — intentá de nuevo.')
+      } else {
+        setError('Error de conexión. Verificá tu internet e intentá de nuevo.')
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
