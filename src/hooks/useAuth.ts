@@ -9,14 +9,15 @@ export function useAuthInit() {
     const fallback = setTimeout(() => setLoading(false), 6000)
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      clearTimeout(fallback)
       if (!session?.user) {
+        clearTimeout(fallback)
         setUser(null)
         setLoading(false)
         return
       }
       const { data: profile } = await supabase
         .from('users').select('id, name, role').eq('id', session.user.id).single()
+      clearTimeout(fallback)
       setUser(profile ?? null)
       setLoading(false)
     })
